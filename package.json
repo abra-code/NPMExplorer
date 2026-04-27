@@ -1,0 +1,15 @@
+{
+  "name": "npm-explorer",
+  "version": "1.0.0",
+  "description": "NPM Package Explorer - browse and search npm registry with native macOS UI",
+  "main": "index.js",
+  "os": [
+    "darwin"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "actionui": "file:../ActionUI/ActionUINodeJS"
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "type": "NavigationSplitView",
+  "id": 100,
+  "properties": {
+    "style": "balanced",
+    "frame": {
+      "minWidth": 1000,
+      "minHeight": 540
+    }
+  },
+  "sidebar": {
+    "type": "VStack",
+    "properties": {
+      "spacing": 0,
+      "navigationSplitViewColumnWidth": {
+        "min": 400,
+        "ideal": 650,
+        "max": 800
+      }
+    },
+    "children": [
+      {
+        "type": "HStack",
+        "properties": {
+          "spacing": 6,
+          "padding": {
+            "top": 8,
+            "leading": 12,
+            "bottom": 8,
+            "trailing": 12
+          }
+        },
+        "children": [
+          {
+            "type": "TextField",
+            "id": 101,
+            "properties": {
+              "prompt": "Search npm packages...",
+              "actionID": "npm.search",
+              "frame": { "maxWidth": "infinity" }
+            }
+          },
+          {
+            "type": "Picker",
+            "id": 102,
+            "properties": {
+              "title": "",
+              "pickerStyle": "menu",
+              "options": [
+                { "title": "Relevance", "tag": "relevance" },
+                { "title": "Downloads", "tag": "downloads" },
+                { "title": "Trending", "tag": "trending" },
+                { "title": "Updated", "tag": "updated" }
+              ],
+              "actionID": "npm.sort.changed"
+            }
+          }
+        ]
+      },
+      {
+        "type": "Table",
+        "id": 103,
+        "properties": {
+          "columns": ["Package", "Description", "Version", "Score"],
+          "widths": [150, 250, 60, 50],
+          "actionID": "npm.package.selection.changed",
+          "frame": {
+            "maxWidth": "infinity",
+            "maxHeight": "infinity"
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "id": 104,
+        "properties": {
+          "text": "Enter a search term and press Enter",
+          "font": "caption",
+          "foregroundStyle": "secondary",
+          "frame": {
+            "maxWidth": "infinity",
+            "alignment": "leading"
+          },
+          "padding": {
+            "top": 6,
+            "leading": 12,
+            "bottom": 6,
+            "trailing": 12
+          }
+        }
+      }
+    ]
+  },
+  "detail": {
+    "type": "VStack",
+    "properties": {
+      "spacing": 12,
+      "padding": "default",
+      "frame": {
+        "minWidth": 350,
+        "idealWidth": 400
+      }
+    },
+    "children": [
+      {
+        "type": "GroupBox",
+        "properties": {
+          "title": "Package Info",
+          "frame": {
+            "maxWidth": "infinity",
+            "maxHeight": "infinity"
+          }
+        },
+        "children": [
+          {
+            "type": "ScrollView",
+            "properties": {
+              "frame": {
+                "maxWidth": "infinity",
+                "maxHeight": "infinity"
+              }
+            },
+            "content": {
+              "type": "Text",
+              "id": 111,
+              "properties": {
+                "text": "Select a package from the list to view details.",
+                "textSelection": "enabled",
+                "frame": {
+                  "maxWidth": "infinity",
+                  "maxHeight": "infinity",
+                  "alignment": "topLeading"
+                },
+                "foregroundStyle": "secondary"
+              }
+            }
+          }
+        ]
+      },
+{
+            "type": "Link",
+            "id": 120,
+            "properties": {
+              "title": "View on npmjs.com ↗",
+              "url": "https://www.npmjs.com/package/npm",
+              "font": "callout",
+              "frame": { "maxWidth": "infinity", "alignment": "trailing" }
+            }
+          },
+          {
+            "type": "HStack",
+            "properties": {
+              "spacing": 8
+            },
+            "children": [
+              {
+                "type": "Spacer"
+              },
+              {
+                "type": "Button",
+                "id": 140,
+                "properties": {
+                  "title": "Install Package",
+                  "disabled": true,
+                  "actionID": "npm.install.package"
+                }
+              }
+            ]
+          }
+    ]
+  }
+}
