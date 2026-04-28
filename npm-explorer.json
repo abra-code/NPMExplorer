@@ -4,9 +4,10 @@
   "properties": {
     "style": "balanced",
     "frame": {
-      "minWidth": 1000,
-      "minHeight": 540
-    }
+        "minWidth": 1000,
+        "minHeight": 540,
+        "idealWidth": 1100
+      }
   },
   "sidebar": {
     "type": "VStack",
@@ -75,6 +76,7 @@
         "id": 104,
         "properties": {
           "text": "Enter a search term and press Enter",
+          "textSelection": "enabled",
           "font": "caption",
           "foregroundStyle": "secondary",
           "frame": {
@@ -137,7 +139,7 @@
           }
         ]
       },
-{
+         {
             "type": "Link",
             "id": 120,
             "properties": {
@@ -154,6 +156,20 @@
             },
             "children": [
               {
+                "type": "Picker",
+                "id": 150,
+                "properties": {
+                  "title": "Install to:",
+                  "pickerStyle": "menu",
+                  "options": [
+                    { "title": "Global", "tag": "global" },
+                    { "title": "Current Dir", "tag": "local" },
+                    { "title": "Custom...", "tag": "custom" }
+                  ],
+                  "actionID": "npm.install.location.changed"
+                }
+              },
+              {
                 "type": "Spacer"
               },
               {
@@ -166,6 +182,18 @@
                 }
               }
             ]
+          },
+          {
+            "type": "Text",
+            "id": 151,
+            "properties": {
+              "text": "",
+              "textSelection": "enabled",
+              "font": "caption",
+              "foregroundStyle": "secondary",
+              "frame": { "maxWidth": "infinity", "alignment": "leading" },
+              "padding": { "leading": 8 }
+            }
           }
     ]
   }

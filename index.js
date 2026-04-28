@@ -2,9 +2,11 @@
 
 const actionui = require('actionui');
 const path = require('path');
+const fs = require('fs');
 const { Worker } = require('worker_threads');
 const https = require('https');
 const { getLastError, clearError } = actionui;
+const { exec, execSync } = require('child_process');
 
 const REGISTRY = 'registry.npmjs.org';
 const DOWNLOADS = 'api.npmjs.org';
@@ -16,8 +18,15 @@ const VIEW = {
     STATUS_TEXT: 104,
     PACKAGE_INFO: 111,
     NPM_LINK: 120,
-    OPEN_REPO_BUTTON: 140
+    OPEN_REPO_BUTTON: 140,
+    INSTALL_LOCATION_PICKER: 150,
+    GLOBAL_PATH_TEXT: 151
 };
+
+const nodeDir = path.dirname(process.execPath);
+const npmPath = path.join(nodeDir, 'npm');
+const globalPrefix = path.join(nodeDir, '..');
+const globalModulesPath = execSync(`"${npmPath}" root -g`, { encoding: 'utf8' }).trim();
 
 // Worker for background network requests
 function runInWorker(script, data) {
@@ -141,6 +150,7 @@ app.onWillFinishLaunching(() => {
 
 app.onWindowWillPresent((window) => {
     mainWindow = window;
+    mainWindow.setValue(VIEW.GLOBAL_PATH_TEXT, 0, `Global: ${globalModulesPath}`);
     console.log('[NPM] Window ready');
 });
 
@@ -324,17 +334,97 @@ app.action('npm.package.selection.changed', async (ctx) => {
 
 app.action('npm.install.package', async (ctx) => {
     if (selectedPackage) {
-        const { exec } = require('child_process');
-        exec(`npm install ${selectedPackage}`, { cwd: process.cwd() }, (error, stdout, stderr) => {
+        let installArgs, cwd, locationNote, installTarget;
+        if (installLocation === 'global') {
+            installArgs = `install -g --prefix "${globalPrefix}" ${selectedPackage}`;
+            installTarget = globalModulesPath;
+            locationNote = ` globally to ${globalModulesPath}`;
+        } else if (installLocation === 'custom') {
+            installArgs = `install ${selectedPackage}`;
+            const isNodeModules = customInstallPath.endsWith('/node_modules') || customInstallPath.endsWith('node_modules');
+            cwd = isNodeModules ? path.dirname(customInstallPath) : customInstallPath;
+            installTarget = cwd;
+            locationNote = ` to ${cwd}`;
+        } else {
+            installArgs = `install ${selectedPackage}`;
+            cwd = process.cwd();
+            installTarget = cwd;
+            locationNote = '';
+        }
+
+        const writable = isWritable(installTarget);
+
+        if (!writable) {
+          const choice = app.alert({
+            title: 'Permission Required',
+            message: `Cannot write to "${installTarget}". Use Terminal with sudo?`,
+            style: 'warning',
+            buttons: ['Use Terminal', 'Cancel']
+         });
+         if (choice === 'Use Terminal') {
+                const sudoCmd = `sudo "${npmPath}" ${installArgs}`;
+                const escapedCmd = sudoCmd.replace(/"/g, '\\"');
+                const scriptPath = path.join('/tmp', `npm_install_${Date.now()}.applescript`);
+                const scriptContent = `tell application "Terminal"\n    do script "${escapedCmd}"\n    activate\nend tell`;
+                fs.writeFileSync(scriptPath, scriptContent);
+                exec(`osascript "${scriptPath}"`, (err, stdout, stderr) => {
+                    try { fs.unlinkSync(scriptPath); } catch(e) {}
+                    mainWindow.setValue(VIEW.STATUS_TEXT, 0, err ? 'Failed: ' + err.message : 'Opened Terminal with sudo');
+                });
+            }
+            return;
+        }
+
+        const cmd = `"${npmPath}" ${installArgs}`;
+        exec(cmd, { cwd }, (error, stdout, stderr) => {
             if (error) {
                 console.log('[NPM] install error:', error.message);
                 mainWindow.setValue(VIEW.STATUS_TEXT, 0, 'Install failed: ' + error.message);
             } else {
                 console.log('[NPM] install success');
-                mainWindow.setValue(VIEW.STATUS_TEXT, 0, `Installed ${selectedPackage}`);
+                mainWindow.setValue(VIEW.STATUS_TEXT, 0, `Installed ${selectedPackage}${locationNote}`);
             }
         });
     }
+});
+
+function isWritable(dir) {
+    try {
+        const testFile = path.join(dir, '.npm_write_test_' + Date.now());
+        fs.writeFileSync(testFile, '');
+        fs.unlinkSync(testFile);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+let installLocation = 'global';
+let customInstallPath = null;
+app.action('npm.install.location.changed', async (ctx) => {
+    installLocation = mainWindow.getValueAsString(VIEW.INSTALL_LOCATION_PICKER, 0);
+    if (installLocation === 'global') {
+        customInstallPath = null;
+        mainWindow.setValue(VIEW.GLOBAL_PATH_TEXT, 0, `Global: ${globalModulesPath}`);
+    } else if (installLocation === 'local') {
+        customInstallPath = null;
+        mainWindow.setValue(VIEW.GLOBAL_PATH_TEXT, 0, `Local: ${process.cwd()}/node_modules`);
+    } else if (installLocation === 'custom') {
+            const result = app.openPanel({
+                title: 'Select Installation Directory',
+                canChooseFiles: false,
+                canChooseDirectories: true,
+                canCreateDirectories: true
+            });
+            if (result && result.length > 0) {
+                const isNodeModules = result[0].endsWith('/node_modules') || result[0].endsWith('node_modules');
+                customInstallPath = isNodeModules ? path.dirname(result[0]) : result[0];
+                mainWindow.setValue(VIEW.GLOBAL_PATH_TEXT, 0, `Custom: ${customInstallPath}/node_modules`);
+            } else {
+                mainWindow.setValue(VIEW.INSTALL_LOCATION_PICKER, 0, 'global');
+                mainWindow.setValue(VIEW.GLOBAL_PATH_TEXT, 0, `Global: ${globalModulesPath}`);
+            }
+        }
 });
 
 app.run();
